@@ -8,7 +8,7 @@ uniform vec2 resolution;
 uniform sampler2D tex;
 
 
-float noise3( vec3 x ) {
+float noisej( vec3 x ) {
     vec3 p = floor(x),f = fract(x);
 
     f = f*f*(3.-2.*f);  // or smoothstep     // to make derivative continuous at borders
@@ -21,11 +21,11 @@ float noise3( vec3 x ) {
                     mix( hash3(p+vec3(0,1,1)), hash3(p+vec3(1,1,1)),f.x),f.y), f.z);
 }
 
-//#define noise(x) (noise3(x)+noise3(x+11.5)) / 2.0 // pseudoperlin improvement from foxes idea 
+#define noise(x) (noisej(x)+noisej(x+11.5)) / 2.0 // pseudoperlin improvement from foxes idea 
 
-float noise(vec3 x){
-    return noise3(x) + noise3(x+11.5)/2.0;
-}
+// float noise(vec3 x){
+//     return noisekkk(x) + noisekkk(x+11.5)/2.0;
+// }
 
 void main()
 {
@@ -36,7 +36,8 @@ void main()
     float v = sin(6.28 * 10.0 * n);
     float t = time;
     
-    v = smoothstep(1.0, 0.0, 0.5 * abs(v) / fwidth(v));
+    float k = abs(v)/fwidth(v);
+    v = smoothstep(1.0, 0.0, 0.5 * k);
 
     vec4 sinColor = 0.5 + 0.5 * sin(12.0 * n + vec4(0.0, 2.1, -2.1, 0.0));
     vec4 texColor = texture(tex, (U + vec2(1.0, sin(t))) / R);

@@ -27,7 +27,6 @@ void main()
     }
     else{
         FragColor = texture(tex,texCoord);
-        
     }
     // ivec2 dest = ivec2(floor(gl_FragCoord.x), floor(gl_FragCoord.y));
     // if(mod(dest.x, 100) == 0 && mod(dest.y, 100) == 0){
