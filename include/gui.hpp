@@ -3,6 +3,8 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
+bool g_ImGuiFrameBegin = false;
+
 int initGuiOpenGL3(GLFWwindow* window, std::string version){
     int res = 1;
     if(!ImGui::CreateContext()){

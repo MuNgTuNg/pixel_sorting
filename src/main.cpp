@@ -3,6 +3,7 @@
 #include <textures.hpp>
 #include <vertices.hpp>
 #include <buffers.hpp>
+#include <error.hpp>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -16,10 +17,9 @@
 #include <windows.h>
 #include <algorithm>
 
-
 GLFWwindow* g_Window = nullptr;
 std::string g_FileName = "";
-shb::ImageData g_ImageData;
+
 
 int initGraphics(const std::string& windowTitle ){
     if (!glfwInit()) {
@@ -49,16 +49,17 @@ void mainLoop(){
     int guiWidth = 200;
     int guiHeight = 0;
 
-    g_ImageData.loadFile(g_FileName.c_str());
-    guiHeight = g_ImageData.height();
-    //stbi_image_free(g_ImageData.m_Data); //we don't want to do this just yet
+    shb::ImageData imageData{g_FileName.c_str()};
+    shb::ImageData imageDataUnsorted{g_FileName.c_str()};
+    guiHeight = imageData.height();
+    //stbi_image_free(imageData.m_Data); //we don't want to do this just yet
 
-    glfwSetWindowSize(g_Window, g_ImageData.width() + guiWidth, g_ImageData.height());
-    glViewport(100, 0, g_ImageData.width() + guiWidth, g_ImageData.height() + guiHeight);
+    glfwSetWindowSize(g_Window, imageData.width() + guiWidth, imageData.height());
+    glViewport(100, 0, imageData.width() + guiWidth, imageData.height() + guiHeight);
 
-    unsigned int textureHandle;
-    shb::loadTexture(g_ImageData,&textureHandle);
 
+    unsigned int textureHandle = 0;
+    shb::loadTexture(imageData,&textureHandle);
     shb::ShaderProgram shaderProgramTexture{
         {
             "fragmentShaderTexture.frag", 
@@ -99,6 +100,16 @@ void mainLoop(){
         glfwGetFramebufferSize(g_Window, &resolutionWidth, &resolutionHeight);
 
         styleGUI();
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        //ImGui::DockSpaceOverViewport();
+        ImGui::SetNextWindowSize(ImVec2(guiWidth, imageData.height()));
+        ImGui::SetNextWindowPos(ImVec2(0, 0));
+        ImGui::Begin("Controls", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+        g_ImGuiFrameBegin = true;
+
+        
 
         shaderProgramBackground.use();
         float time = glfwGetTime();
@@ -115,7 +126,7 @@ void mainLoop(){
         indexBuffer.bind();
         glDrawElements(GL_TRIANGLES,indexBuffer.numElements(),GL_UNSIGNED_INT,0);
         
-        glViewport(guiWidth, 0, g_ImageData.width(), g_ImageData.height());
+        glViewport(guiWidth, 0, imageData.width(), imageData.height());
 
         shaderProgramTexture.use();
         glUniform2f(shaderProgramTexture.uniformLoc("mousePosIn"),mousePosX,-mousePosY+resolutionHeight);
@@ -123,22 +134,31 @@ void mainLoop(){
         glUniform2f(shaderProgramTexture.uniformLoc("resolution"),resolutionWidth,resolutionHeight);
         glDrawElements(GL_TRIANGLES,indexBuffer.numElements(),GL_UNSIGNED_INT,0);
         
-        glViewport(0, 0, g_ImageData.width()+guiWidth, g_ImageData.height());
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-        //ImGui::DockSpaceOverViewport();
-        ImGui::SetNextWindowSize(ImVec2(guiWidth, g_ImageData.height()));
-        ImGui::SetNextWindowPos(ImVec2(0, 0));
-        ImGui::Begin("Controls", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+        glViewport(0, 0, imageData.width()+guiWidth, imageData.height());
+        ImGui::Text("Image Height: %d\nImage width: %d\nChannels: %d\n",imageData.height(), imageData.width(),imageData.numChannels());
+        if (ImGui::CollapsingHeader("Window"))
+        {
+            ImGui::Text("Mouse X: %.0f\nMouse Y: %.0f",mousePosX,mousePosY);
+            ImGui::Text("Resolution: (%d,%d)",resolutionWidth,resolutionHeight);
+            ImGui::Text("Time: %f\n",time);
+        }
+        if (ImGui::CollapsingHeader("Sorting"))
+        {
+            shb::pickSortingMethod();
+            if (ImGui::Button("Sort pixels")) {
+                shb::sortPixels(imageData);
+                shb::loadTexture(imageData,&textureHandle);
+            }
+            if (ImGui::Button("Restore image")) {
+                shb::loadTexture(imageDataUnsorted,&textureHandle);
+            }
+        }
         if (ImGui::Button("Reload shaders")) {
             shaderProgramBackground.reload();
             shaderProgramTexture.reload();
         }
+    
         ImGui::Checkbox("Demo Window?",&demoWindowRender);
-        ImGui::Text("Mouse X: %.0f\nMouse Y: %.0f",mousePosX,mousePosY);
-        ImGui::Text("Resolution: (%d,%d)",resolutionWidth,resolutionHeight);
-        ImGui::Text("Time: %f\n",time);
         ImGui::End();
 
         if(demoWindowRender){
@@ -151,6 +171,7 @@ void mainLoop(){
         glfwSwapBuffers(g_Window);
         glfwPollEvents();    
     }
+    //CHECK_GL_ERROR();
 
 }
 

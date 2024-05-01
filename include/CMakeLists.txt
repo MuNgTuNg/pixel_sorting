@@ -7,6 +7,8 @@ add_library( includes INTERFACE
     textures.hpp
     vertices.hpp
     buffers.hpp
+    error.hpp
+    
 )   
 include_directories(
     ${CMAKE_SOURCE_DIR}/external/glfw/include
