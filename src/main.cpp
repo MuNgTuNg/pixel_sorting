@@ -157,8 +157,10 @@ void mainLoop(){
         }
         if (ImGui::CollapsingHeader("HSV"))
         {
+            shb::shiftHue(imageData, 10.0);
             if (ImGui::Button("Test Pixel Encoding")){
                 testPixelEncoding(imageData);
+                shb::loadTexture(imageData,&textureHandle);
             }
             if (ImGui::Button("Shift Hue")){
                 shb::shiftHue(imageData, 10.0);

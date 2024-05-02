@@ -105,11 +105,11 @@ void pickSortingMethod(){
         }
 }
 
-Pixel getPixelHSV(Pixel* input){
+Pixel getPixelHSV(Pixel& input){
     //normalise rgb values
-    double r = input->r/255.0;
-    double g = input->g/255.0;
-    double b = input->b/255.0;
+    double r = input.r/255.0;
+    double g = input.g/255.0;
+    double b = input.b/255.0;
     
 
     double cmax = std::max(r,std::max(g,b));
@@ -146,19 +146,19 @@ Pixel getPixelHSV(Pixel* input){
     }
     
     double val = cmax;
-    input->hue = hue;
-    input->sat = sat;
-    input->val = val;
+    input.hue = hue;
+    input.sat = sat;
+    input.val = val;
 
-    Pixel ret = *input;
+    Pixel ret = input;
     return ret;
 }
 
 
-void setPixelRGBFromHSV(Pixel* input){
-    double val = input->val;
-    double sat = input->sat;
-    double hue = input->hue;
+void setPixelRGBFromHSV(Pixel& input){
+    double val = input.val;
+    double sat = input.sat;
+    double hue = input.hue;
 
     double chroma = val * sat;
     double x = chroma*(1.0-(abs(fmod(hue/60.0,2.0)-1.0)));
@@ -199,9 +199,9 @@ void setPixelRGBFromHSV(Pixel* input){
         newB = (x+m)*255.0; 
     }
 
-    input->r = newR;
-    input->g = newG;
-    input->b = newB;
+    input.r = newR;
+    input.g = newG;
+    input.b = newB;
 }
 
 std::vector<Pixel> dataToPixels(ImageData& imageData){
@@ -223,7 +223,7 @@ std::vector<Pixel> dataToPixels(ImageData& imageData){
         if(imageData.numChannels() > 3){
             pixel.a = imageData.m_Data[i+3];
         }
-        getPixelHSV(&pixel);
+        getPixelHSV(pixel);
         pixels.push_back(pixel);
     }
     return pixels;
@@ -248,8 +248,8 @@ void shiftHue(ImageData& imageData, double shiftValue){ //FIX incurs a huge amou
     std::vector<Pixel> pixels = dataToPixels(imageData);
     for(int i = 0; i < pixels.size(); i++){
         pixels[i].hue += shiftValue;
-        fmod(pixels[i].hue,360.0);
-        setPixelRGBFromHSV(&pixels[i]);
+        pixels[i].hue = fmod(pixels[i].hue,360.0);
+        setPixelRGBFromHSV(pixels[i]);
     }
     pixelsToData(imageData,pixels);
 }
@@ -257,7 +257,7 @@ void shiftSat(ImageData& imageData,double shiftValue){
     std::vector<Pixel> pixels = dataToPixels(imageData);
     for(int i = 0; i < pixels.size(); i++){
         pixels[i].sat += shiftValue;
-        setPixelRGBFromHSV(&pixels[i]);
+        setPixelRGBFromHSV(pixels[i]);
     }
     pixelsToData(imageData,pixels);
 }
@@ -265,7 +265,7 @@ void shiftVal(ImageData& imageData,int shiftValue){
     std::vector<Pixel> pixels = dataToPixels(imageData);
     for(int i = 0; i < pixels.size(); i++){
         pixels[i].val += shiftValue;
-        setPixelRGBFromHSV(&pixels[i]);
+        setPixelRGBFromHSV(pixels[i]);
     }
     pixelsToData(imageData,pixels);
 }
