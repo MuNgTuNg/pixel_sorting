@@ -4,6 +4,7 @@
 #include <vertices.hpp>
 #include <buffers.hpp>
 #include <error.hpp>
+#include <pixels.hpp>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -150,7 +151,30 @@ void mainLoop(){
                 shb::loadTexture(imageData,&textureHandle);
             }
             if (ImGui::Button("Restore image")) {
-                shb::loadTexture(imageDataUnsorted,&textureHandle);
+                imageData = imageDataUnsorted; //needs a proper way of swapping the data TODO
+                shb::loadTexture(imageData,&textureHandle);
+            }
+        }
+        if (ImGui::CollapsingHeader("HSV"))
+        {
+            if (ImGui::Button("Test Pixel Encoding")){
+                testPixelEncoding(imageData);
+            }
+            if (ImGui::Button("Shift Hue")){
+                shb::shiftHue(imageData, 10.0);
+                shb::loadTexture(imageData,&textureHandle);
+            }
+            if (ImGui::Button("Shift Sat pos")){
+                shb::shiftSat(imageData, -0.01);
+                shb::loadTexture(imageData,&textureHandle);
+            }
+            if (ImGui::Button("Shift Sat neg")){
+                shb::shiftSat(imageData, -0.01);
+                shb::loadTexture(imageData,&textureHandle);
+            }
+            if (ImGui::Button("Shift Val")){
+                shb::shiftVal(imageData, 1.0);
+                shb::loadTexture(imageData,&textureHandle);
             }
         }
         if (ImGui::Button("Reload shaders")) {

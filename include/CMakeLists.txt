@@ -8,6 +8,8 @@ add_library( includes INTERFACE
     vertices.hpp
     buffers.hpp
     error.hpp
+    pixels.hpp
+    sorting.hpp
     
 )   
 include_directories(
