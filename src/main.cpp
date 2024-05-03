@@ -50,8 +50,8 @@ void mainLoop(){
     int guiWidth = 200;
     int guiHeight = 0;
 
-    shb::ImageData imageData{g_FileName.c_str()};
-    shb::ImageData imageDataUnsorted{g_FileName.c_str()};
+    shb::ImageDataPixels imageData{g_FileName.c_str()};
+    //shb::ImageData imageDataUnsorted{g_FileName.c_str()};
     guiHeight = imageData.height();
     //stbi_image_free(imageData.m_Data); //we don't want to do this just yet
 
@@ -91,6 +91,11 @@ void mainLoop(){
     bool demoWindowRender = false;
     double mousePosX, mousePosY;
     int resolutionWidth, resolutionHeight;
+
+    int restorePressed = 0;
+    float hueOffset =0;
+    float saturation = 0;
+    float value = 0;
 
     while(!glfwWindowShouldClose(g_Window))
     {
@@ -150,39 +155,74 @@ void mainLoop(){
                 shb::sortPixels(imageData);
                 shb::loadTexture(imageData,&textureHandle);
             }
+            
             if (ImGui::Button("Restore image")) {
-                imageData = imageDataUnsorted; //needs a proper way of swapping the data TODO
-                shb::loadTexture(imageData,&textureHandle);
+                // imageData = imageDataUnsorted; //needs a proper way of swapping the data TODO
+                restorePressed = 1-restorePressed;
+                shb::loadTexture(imageData,&textureHandle);   
             }
+            if(restorePressed){ ImGui::Text("Might have to wait for this one");} 
         }
         if (ImGui::CollapsingHeader("HSV"))
         {
-            if (ImGui::Button("Test Pixel Encoding")){
-                testPixelEncoding(imageData);
+            bool changedHSV = false;
+            float prevHueOffset = hueOffset;    
+            ImGui::SliderFloat("Shift Hue",&hueOffset,0.0,360.0);
+            hueOffset = fmod(hueOffset, 360.0);
+            if(prevHueOffset != hueOffset){
+                shb::shiftHue(imageData,hueOffset);
+                changedHSV = true;
             }
-            if (ImGui::Button("Shift Hue")){
-                shb::shiftHue(imageData, 10.0);
-                shb::loadTexture(imageData,&textureHandle);
+
+            // float prevSat = saturation;    //FIX:: loses original data
+            // ImGui::SliderFloat("Shift Sat",&saturation,0.0,1.0);
+            // if (prevSat != saturation){
+            //     shb::shiftSat(imageData, saturation);
+            //     changedHSV = true;
+            // }
+
+            // double prevVal = value;
+            // ImGui::SliderFloat("Shift Val",&value,0.0,1.0);
+            // if (prevVal != value){
+            //     shb::shiftVal(imageData, value);
+            //     changedHSV = true;
+            // }
+
+            if (ImGui::Button("Add Val")){
+                shb::shiftVal(imageData, -0.01);
+                changedHSV = true;
             }
-            if (ImGui::Button("Shift Sat pos")){
+            if (ImGui::Button("Sub Val")){
+                shb::shiftVal(imageData, -0.1);
+                changedHSV = true;
+            }
+            if (ImGui::Button("Add sat")){
+                shb::shiftSat(imageData, 0.01);
+                changedHSV = true;
+            }
+            if (ImGui::Button("sub sat")){
                 shb::shiftSat(imageData, -0.01);
-                shb::loadTexture(imageData,&textureHandle);
+                changedHSV = true;
             }
-            if (ImGui::Button("Shift Sat neg")){
-                shb::shiftSat(imageData, -0.01);
-                shb::loadTexture(imageData,&textureHandle);
+
+
+            if (ImGui::Button("Reset HSV")) {
+                shb::resetHSV(imageData);
+                changedHSV = true;
             }
-            if (ImGui::Button("Shift Val")){
-                shb::shiftVal(imageData, 1.0);
+            if(changedHSV){
                 shb::loadTexture(imageData,&textureHandle);
             }
         }
-        if (ImGui::Button("Reload shaders")) {
-            shaderProgramBackground.reload();
-            shaderProgramTexture.reload();
+        if (ImGui::CollapsingHeader("Misc"))
+        {
+            if (ImGui::Button("Reload shaders")) {
+                shaderProgramBackground.reload();
+                shaderProgramTexture.reload();
+            }
+            ImGui::Checkbox("Demo Window?",&demoWindowRender);
         }
-    
-        ImGui::Checkbox("Demo Window?",&demoWindowRender);
+
         ImGui::End();
 
         if(demoWindowRender){

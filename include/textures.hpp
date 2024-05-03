@@ -4,6 +4,7 @@
 
 #include <gui.hpp>
 #include <algorithm>
+#include <cstring>
 
 namespace shb{
 
@@ -18,16 +19,20 @@ class ImageData{
        clearData();
     }
     ImageData(){};
-    ImageData(const ImageData& rhs){
+    ImageData(const ImageData& rhs){ //TODO:: finish copy constructor to copy data from rhs pointer
         m_ImageHeight = rhs.height();
         m_ImageWidth = rhs.width();
         m_FileName = rhs.fileName();
 
-        // unsigned char* temp; //swap and delete? TODO
-        // temp = m_Data;
-        // m_Data = rhs.m_Data;
-        
+        //delete m_Data;
+        //m_Data = new unsigned char[m_DataSize];
+        //for(size_t i = 0; i < m_DataSize; i++){
+        //    m_Data[i] = rhs.m_Data[i];
+        //}
+        delete m_Data;
+        std::memcpy(m_Data, rhs.m_Data, m_DataSize);
     }
+    
     
     int width() const { return m_ImageWidth; }
     int height() const { return m_ImageHeight; }
@@ -46,6 +51,7 @@ class ImageData{
         m_FileName = fileName;
         clearData();
         m_Data = stbi_load(fileName.c_str(), &m_ImageWidth, &m_ImageHeight, &m_NumChannels, 0);
+        m_DataSize = m_ImageWidth * m_ImageHeight * m_NumChannels;
     }
 
     //void pixel(int x, int y);
@@ -53,11 +59,13 @@ class ImageData{
     unsigned char* m_Data = nullptr;
 
   private:
+    int m_DataSize = 0;
     std::string m_FileName = "";
     int m_ImageWidth = 0;
     int m_ImageHeight = 0;
     int m_NumChannels = 0;
 };
+
 
 void loadTexture(const ImageData& imageData, unsigned int* textureHandle){
     if(textureHandle== 0){
@@ -66,6 +74,9 @@ void loadTexture(const ImageData& imageData, unsigned int* textureHandle){
     glBindTexture(GL_TEXTURE_2D, *textureHandle);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    if(imageData.m_Data == nullptr){
+        std::cerr << "m_Data == null: No Image Data " << std::endl;
+    }
     if (imageData.m_Data) {
         if(imageData.numChannels() == 3){
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imageData.width(), imageData.height(), 0, GL_RGB, GL_UNSIGNED_BYTE, imageData.m_Data); 

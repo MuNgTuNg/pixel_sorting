@@ -6,24 +6,33 @@
 
 
 namespace shb{
+
 enum EnumSortBy{
     SORT_BY_RED,
     SORT_BY_GREEN,
     SORT_BY_BLUE,
     SORT_BY_ALPHA,
+    SORT_BY_HUE,
+    SORT_BY_SATURATION,
+    SORT_BY_VALUE,
     NUM_SORT_BY
 };
 class Pixel{
     public:
-    double r = 0;
-    double g = 0;
-    double b = 0;
-    double a = 0;
-    double x = 0;
-    double y = 0;
-    double hue = 0;
-    double sat = 0;
-    double val = 0;
+    double r = 0.0;
+    double g = 0.0;
+    double b = 0.0;
+    double a = 0.0;
+    double x = 0.0;
+    double y = 0.0;
+    double hue = 0.0;
+    double sat = 0.0;
+    double val = 0.0;
+
+    double originalHue = 0.0;
+    double originalSat = 0.0;
+    double originalVal = 0.0;
+
     
     Pixel() = default;
     Pixel(const Pixel& rhs){
@@ -39,17 +48,28 @@ class Pixel{
     }
 
     friend bool operator<(const Pixel& lhs, const Pixel& rhs){
-        if(m_SortBy == SORT_BY_RED){
-            return lhs.r < rhs.r;
-        }
-        if(m_SortBy == SORT_BY_GREEN){
-            return lhs.g < rhs.g;
-        }
-        if(m_SortBy == SORT_BY_BLUE){
-            return lhs.b < rhs.b;
-        }
-        if(m_SortBy == SORT_BY_ALPHA){
-            return lhs.a < rhs.a;
+        switch(m_SortBy){
+            case SORT_BY_RED:
+                return lhs.r < rhs.r;
+                break;
+            case SORT_BY_GREEN:
+                return lhs.g < rhs.g;
+                break;
+            case SORT_BY_BLUE:
+                return lhs.b < rhs.b;
+                break;
+            case SORT_BY_ALPHA:
+                return lhs.a < rhs.a;
+                break;
+            case SORT_BY_HUE:
+                return lhs.hue < rhs.hue;
+                break;
+            case SORT_BY_SATURATION:
+                return lhs.sat < rhs.sat;
+                break;
+            case SORT_BY_VALUE:
+                return lhs.val < rhs.val;
+                break;
         }
         
     }
@@ -67,43 +87,6 @@ class Pixel{
     static EnumSortBy m_SortBy;
 };
 EnumSortBy Pixel::m_SortBy = SORT_BY_GREEN;
-
-
-
-
-void pickSortingMethod(){
-     const char* items[] = { "Sort by red", "Sort by blue", "Sort by green", "Sort by alpha" };
-        static int item_current_idx = 0; // Here we store our selection data as an index.
-        if (ImGui::BeginListBox("Sort color:\n  "))
-        {
-            for (int n = 0; n < IM_ARRAYSIZE(items); n++)
-            {
-                const bool is_selected = (item_current_idx == n);
-                if (ImGui::Selectable(items[n], is_selected))
-                    item_current_idx = n;
-
-                // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-                if (is_selected)
-                    ImGui::SetItemDefaultFocus();
-
-                if(items[item_current_idx] == "Sort by red"){
-                    Pixel::m_SortBy = SORT_BY_RED;
-                }
-                if(items[item_current_idx] == "Sort by blue"){
-                    Pixel::m_SortBy = SORT_BY_BLUE;
-                }
-                if(items[item_current_idx] == "Sort by green"){
-                    Pixel::m_SortBy = SORT_BY_GREEN;
-                }
-                if(items[item_current_idx] == "Sort by alpha"){
-                    Pixel::m_SortBy = SORT_BY_ALPHA;
-                }
-                
-                
-            }
-            ImGui::EndListBox();
-        }
-}
 
 Pixel getPixelHSV(Pixel* input){
     //normalise rgb values
@@ -149,11 +132,13 @@ Pixel getPixelHSV(Pixel* input){
     input->hue = hue;
     input->sat = sat;
     input->val = val;
+    input->originalHue = hue;
+    input->originalSat = sat;
+    input->originalVal = val;
 
     Pixel ret = *input;
     return ret;
 }
-
 
 void setPixelRGBFromHSV(Pixel* input){
     double val = input->val;
@@ -204,7 +189,9 @@ void setPixelRGBFromHSV(Pixel* input){
     input->b = newB;
 }
 
-std::vector<Pixel> dataToPixels(ImageData& imageData){
+//imageData is passed as reference because if i have to traverse a pointer for every pixel then it's going
+//to be very slow
+std::vector<Pixel> mapPixelsToData(ImageData& imageData){
     int numEntries = imageData.width() * imageData.height() * imageData.numChannels();
     int width = imageData.width() * imageData.numChannels();
     
@@ -229,8 +216,7 @@ std::vector<Pixel> dataToPixels(ImageData& imageData){
     return pixels;
 }
 
-
-void pixelsToData(ImageData& imageData, std::vector<Pixel>& pixels ){
+void setDataFromPixels(ImageData& imageData, std::vector<Pixel>& pixels ){
     int numEntries = imageData.width() * imageData.height() * imageData.numChannels();
 
     for(int i = 0, j = 0; i < numEntries, j < pixels.size(); i += imageData.numChannels(), j++){
@@ -243,50 +229,113 @@ void pixelsToData(ImageData& imageData, std::vector<Pixel>& pixels ){
     }
 }
 
-//DRY :)
-void shiftHue(ImageData& imageData, double shiftValue){ //FIX incurs a huge amount of data loss
-    std::vector<Pixel> pixels = dataToPixels(imageData);
-    for(int i = 0; i < pixels.size(); i++){
-        pixels[i].hue += shiftValue;
-        fmod(pixels[i].hue,360.0);
-        setPixelRGBFromHSV(&pixels[i]);
+
+class ImageDataPixels : public ImageData{
+    public:
+    ImageDataPixels(const std::string& fileName) : ImageData(fileName){
+        pixels = mapPixelsToData(*this);
+        originalPixels = pixels;
     }
-    pixelsToData(imageData,pixels);
-}
-void shiftSat(ImageData& imageData,double shiftValue){
-    std::vector<Pixel> pixels = dataToPixels(imageData);
-    for(int i = 0; i < pixels.size(); i++){
-        pixels[i].sat += shiftValue;
-        setPixelRGBFromHSV(&pixels[i]);
+    ImageDataPixels(const ImageData& imageData) : ImageData(imageData){}
+
+    void reset(){
+        setDataFromPixels(*this,originalPixels);
     }
-    pixelsToData(imageData,pixels);
-}
-void shiftVal(ImageData& imageData,int shiftValue){
-    std::vector<Pixel> pixels = dataToPixels(imageData);
-    for(int i = 0; i < pixels.size(); i++){
-        pixels[i].val += shiftValue;
-        setPixelRGBFromHSV(&pixels[i]);
+    void updateData(){
+        setDataFromPixels(*this,pixels);
     }
-    pixelsToData(imageData,pixels);
+    std::vector<Pixel> pixels;
+    std::vector<Pixel> originalPixels;
+};
+
+void shiftHue(ImageDataPixels& imageData, int offset){ //not sure if breaks?
+    for(int i = 0; i < imageData.pixels.size(); i++){
+        double newHue = imageData.pixels[i].originalHue + offset;
+        newHue = fmod(newHue,360.0);
+        if(newHue < 0){
+            newHue = 360;
+        }
+        imageData.pixels[i].hue = newHue;
+        setPixelRGBFromHSV(&imageData.pixels[i]);
+    }
+    imageData.updateData();
 }
+
+void shiftSat(ImageDataPixels& imageData,double shiftValue){ //FIX:: this breaks
+    for(int i = 0; i < imageData.pixels.size(); i++){
+        imageData.pixels[i].sat += shiftValue;
+        if(imageData.pixels[i].sat < 0.0){
+            imageData.pixels[i].sat = 0.0;
+        }
+        if(imageData.pixels[i].sat > 1.0){
+            imageData.pixels[i].sat = 1.0;
+        }
+        setPixelRGBFromHSV(&imageData.pixels[i]);
+    }
+    imageData.updateData();
+}
+
+void shiftVal(ImageDataPixels& imageData,int shiftValue){ //FIX:: this breaks
+    for(int i = 0; i < imageData.pixels.size(); i++){
+        imageData.pixels[i].val += shiftValue;
+        if(imageData.pixels[i].val < 0.0){
+            imageData.pixels[i].val = 0.0;
+        }
+        if(imageData.pixels[i].val > 1.0){
+            imageData.pixels[i].val = 1.0;
+        }
+        setPixelRGBFromHSV(&imageData.pixels[i]);
+    }
+    imageData.updateData();
+}
+
+
+
+void resetHSV(ImageDataPixels& imageData){  //TODO:: reset not working as intended
+    for(int i = 0; i < imageData.pixels.size(); i++){
+        imageData.pixels[i].hue = imageData.pixels[i].originalHue;
+        imageData.pixels[i].sat = imageData.pixels[i].originalSat;
+        //imageData.pixels[i].val = imageData.pixels[i].originalVal;
+        setPixelRGBFromHSV(&imageData.pixels[i]);
+    }
+    imageData.reset();
+}
+
 
 
 void testPixelEncoding(ImageData& imageData){
-    std::vector<Pixel> pixels = dataToPixels(imageData);
-    pixelsToData(imageData,pixels);
+    std::vector<Pixel> pixels = mapPixelsToData(imageData);
+    setDataFromPixels(imageData,pixels);
 }
 
-
-
-void sortPixels(ImageData& imageData){
-    std::vector<Pixel> pixels = dataToPixels(imageData);
-
+void sortPixels(ImageDataPixels& imageData){
     //quickSort(pixels,0,pixels.size()-1);
     //bubbleSort(pixels);
-    std::sort(pixels.begin()+1000,pixels.end()-1000); //not sure why custom sorting functions are failing
-
-    pixelsToData(imageData, pixels);
-    //return imageData;
+    std::sort(imageData.pixels.begin()+1000,imageData.pixels.end()-1000); //not sure why custom sorting functions are failing
+    imageData.updateData(); 
 }
+
+void pickSortingMethod(){
+    //items must be in the same order as the enum EnumSortBy
+     const char* items[] = { 
+        "Sort by red", "Sort by green","Sort by blue" , "Sort by alpha", "Sort by hue",
+        "Sort by saturation", "Sort by value" };
+        static int item_current_idx = 0;
+        if (ImGui::BeginListBox("Sort color:\n  "))
+        {
+            for (int n = 0; n < IM_ARRAYSIZE(items); n++)
+            {
+                const bool is_selected = (item_current_idx == n);
+                if (ImGui::Selectable(items[n], is_selected))
+                    item_current_idx = n;
+                if (is_selected)
+                    ImGui::SetItemDefaultFocus();
+                Pixel::m_SortBy = (EnumSortBy)(SORT_BY_RED+item_current_idx);
+            }
+            ImGui::EndListBox();
+        }
+}
+
+
 
 }//namespace shb
