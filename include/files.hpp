@@ -2,9 +2,10 @@
 #include <fstream>
 #include <string>
 #include <iostream>
-//#include <filesystem>
 #include <vector>
+#include <stb_image.h>
 
+//#include <windows.h>
 namespace shb{
 
 
@@ -24,11 +25,13 @@ inline std::string readFile(const std::string& filePath) {
     return content;
 }
 // Function to get the path of the executable
-// inline std::string getExecutablePath() {
-//     char buffer[MAX_PATH];
-//     GetModuleFileName(NULL, buffer, MAX_PATH);
-//     return std::string(buffer);
-// }
+inline std::string getExecutablePath() {
+    // char buffer[MAX_PATH];
+    // GetModuleFileName(NULL, buffer, MAX_PATH);
+    // std::string buf = std::string(buffer);
+    // return buf;
+
+}
 
 // inline void printDetailsAboutEntry(std::filesystem::__cxx11::directory_entry entry){
 //     std::cout 

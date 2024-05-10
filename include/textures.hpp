@@ -1,6 +1,8 @@
 #pragma once
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
 
 #include <gui.hpp>
 #include <algorithm>
@@ -20,20 +22,31 @@ class ImageData{
     }
     ImageData(){};
     ImageData(const ImageData& rhs){ //TODO:: finish copy constructor to copy data from rhs pointer
-        m_ImageHeight = rhs.height();
-        m_ImageWidth = rhs.width();
-        m_FileName = rhs.fileName();
+        // m_ImageHeight = rhs.height();
+        // m_ImageWidth = rhs.width();
+        // m_FileName = rhs.fileName();
 
-        //delete m_Data;
-        //m_Data = new unsigned char[m_DataSize];
-        //for(size_t i = 0; i < m_DataSize; i++){
-        //    m_Data[i] = rhs.m_Data[i];
-        //}
-        delete m_Data;
-        std::memcpy(m_Data, rhs.m_Data, m_DataSize);
+        // //delete m_Data;
+        // //m_Data = new unsigned char[m_DataSize];
+        // //for(size_t i = 0; i < m_DataSize; i++){
+        // //    m_Data[i] = rhs.m_Data[i];
+        // //}
+        // delete m_Data;
+        // std::memcpy(m_Data, rhs.m_Data, m_DataSize);
     }
     
-    
+
+    int save(std::string filePath = "default"){
+        
+        std::string fileName = filePath + "saved_image_" + std::to_string(m_SavedCount) + ".png";
+        m_SavedCount++;
+        if(filePath == "default"){
+            //filePath = getExecutablePath();
+            std::cout << filePath << " <- uninitialised filepath" << "\n";
+        }
+        stbi_flip_vertically_on_write(true);
+        stbi_write_png(fileName.c_str(), m_ImageWidth, m_ImageHeight, m_NumChannels, m_Data, m_ImageWidth*m_NumChannels );
+    }
     int width() const { return m_ImageWidth; }
     int height() const { return m_ImageHeight; }
     int numChannels() const  { return m_NumChannels; }
@@ -64,6 +77,7 @@ class ImageData{
     int m_ImageWidth = 0;
     int m_ImageHeight = 0;
     int m_NumChannels = 0;
+    int m_SavedCount = 0;
 };
 
 

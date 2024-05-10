@@ -50,7 +50,8 @@ void mainLoop(){
     int guiWidth = 200;
     int guiHeight = 0;
 
-    shb::ImageDataPixels imageData{g_FileName.c_str()};
+    shb::ImageData imageData{g_FileName.c_str()};
+    loadOriginalPixels(imageData);
     //shb::ImageData imageDataUnsorted{g_FileName.c_str()};
     guiHeight = imageData.height();
     //stbi_image_free(imageData.m_Data); //we don't want to do this just yet
@@ -174,22 +175,8 @@ void mainLoop(){
                 changedHSV = true;
             }
 
-            // float prevSat = saturation;    //FIX:: loses original data
-            // ImGui::SliderFloat("Shift Sat",&saturation,0.0,1.0);
-            // if (prevSat != saturation){
-            //     shb::shiftSat(imageData, saturation);
-            //     changedHSV = true;
-            // }
-
-            // double prevVal = value;
-            // ImGui::SliderFloat("Shift Val",&value,0.0,1.0);
-            // if (prevVal != value){
-            //     shb::shiftVal(imageData, value);
-            //     changedHSV = true;
-            // }
-
             if (ImGui::Button("Add Val")){
-                shb::shiftVal(imageData, -0.01);
+                shb::shiftVal(imageData, 0.1);
                 changedHSV = true;
             }
             if (ImGui::Button("Sub Val")){
@@ -197,17 +184,20 @@ void mainLoop(){
                 changedHSV = true;
             }
             if (ImGui::Button("Add sat")){
-                shb::shiftSat(imageData, 0.01);
+                shb::shiftSat(imageData, 0.1);
                 changedHSV = true;
             }
             if (ImGui::Button("sub sat")){
-                shb::shiftSat(imageData, -0.01);
+                shb::shiftSat(imageData, -0.1);
                 changedHSV = true;
+            }
+            if (ImGui::Button("Save Image")){
+                imageData.save("saved_images/");
             }
 
 
-            if (ImGui::Button("Reset HSV")) {
-                shb::resetHSV(imageData);
+            if (ImGui::Button("Reset Image")) {
+                resetPixels(imageData);
                 changedHSV = true;
             }
             if(changedHSV){
